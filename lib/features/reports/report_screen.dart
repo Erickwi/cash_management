@@ -26,7 +26,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   @override
   void initState() {
     super.initState();
-    _loadReport();
+    Future.microtask(() => ref.read(reportProvider.notifier).loadReport(_selectedMonth, _selectedYear));
   }
 
   void _loadReport() {
@@ -242,6 +242,23 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               data: (report) {
                 if (report == null) {
                   return const Center(child: Text('Selecciona un mes'));
+                }
+                final hasNoData = report.incomes.isEmpty && report.expenses.isEmpty && report.summary.totalIncome == 0 && report.summary.totalExpenses == 0;
+                if (hasNoData) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.bar_chart, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+                        const SizedBox(height: 16),
+                        Text('No hay datos para este mes',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                        const SizedBox(height: 8),
+                        Text('Agrega ingresos y gastos para ver el reporte',
+                            style: TextStyle(color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  );
                 }
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
