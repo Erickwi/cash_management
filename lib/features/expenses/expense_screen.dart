@@ -8,14 +8,14 @@ import '../../widgets/pie_chart_widget.dart';
 import '../../core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ExpenseScreen extends ConsumerStatefulWidget {
-  const ExpenseScreen({super.key});
+class ExpenseBody extends ConsumerStatefulWidget {
+  const ExpenseBody({super.key});
 
   @override
-  ConsumerState<ExpenseScreen> createState() => _ExpenseScreenState();
+  ConsumerState<ExpenseBody> createState() => _ExpenseBodyState();
 }
 
-class _ExpenseScreenState extends ConsumerState<ExpenseScreen> with SingleTickerProviderStateMixin {
+class _ExpenseBodyState extends ConsumerState<ExpenseBody> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -35,10 +35,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> with SingleTicker
     final state = ref.watch(expenseProvider);
     final reportAsync = ref.watch(reportProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gastos'),
-        bottom: TabBar(
+    return Column(
+      children: [
+        TabBar(
           controller: _tabController,
           indicatorColor: AppColors.blue,
           labelColor: AppColors.blue,
@@ -48,24 +47,22 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> with SingleTicker
             Tab(text: 'Gráfico'),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showForm(context, ref),
-        child: const Icon(Icons.add),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildList(state, ref),
-          _buildChart(reportAsync),
-        ],
-      ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildList(state, ref),
+              _buildChart(reportAsync),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildList(TransactionState state, WidgetRef ref) {
     return RefreshIndicator(
-        onRefresh: () => ref.read(expenseProvider.notifier).loadTransactions(),
+      onRefresh: () => ref.read(expenseProvider.notifier).loadTransactions(),
       child: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.transactions.isEmpty
@@ -86,13 +83,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> with SingleTicker
                     transaction: state.transactions[i],
                     onToggleStatus: () {
                       final newStatus = state.transactions[i].status == 'paid' ? 'pending' : 'paid';
-                      ref
-                          .read(expenseProvider.notifier)
-                          .updateStatus(state.transactions[i].id, newStatus);
+                      ref.read(expenseProvider.notifier).updateStatus(state.transactions[i].id, newStatus);
                     },
-                    onDelete: () => ref
-                        .read(expenseProvider.notifier)
-                        .deleteTransaction(state.transactions[i].id),
+                    onDelete: () => ref.read(expenseProvider.notifier).deleteTransaction(state.transactions[i].id),
                   ),
                 ),
     );
@@ -152,20 +145,69 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> with SingleTicker
       },
     );
   }
+}
 
-  void _showForm(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => TransactionForm(
+void showExpenseForm(BuildContext context, WidgetRef ref) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => SafeArea(
+      child: TransactionForm(
         type: 'expense',
         onSuccess: () {
           ref.read(expenseProvider.notifier).loadTransactions();
           ref.read(reportProvider.notifier).loadReport(DateTime.now().month, DateTime.now().year);
         },
+      ),
+    ),
+  );
+}
+
+class ExpenseScreen extends ConsumerStatefulWidget {
+  const ExpenseScreen({super.key});
+
+  @override
+  ConsumerState<ExpenseScreen> createState() => _ExpenseScreenState();
+}
+
+class _ExpenseScreenState extends ConsumerState<ExpenseScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Gastos'),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.blue,
+          labelColor: AppColors.blue,
+          unselectedLabelColor: AppColors.textSecondary,
+          tabs: const [
+            Tab(text: 'Lista'),
+            Tab(text: 'Gráfico'),
+          ],
+        ),
+      ),
+      body: const ExpenseBody(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => showExpenseForm(context, ref),
+        child: const Icon(Icons.add),
       ),
     );
   }

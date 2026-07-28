@@ -5,7 +5,7 @@ import 'api_provider.dart';
 class RecurringNotifier extends Notifier<AsyncValue<List<RecurringExpense>>> {
   @override
   AsyncValue<List<RecurringExpense>> build() {
-    loadRecurring();
+    Future.microtask(() => loadRecurring());
     return const AsyncValue.loading();
   }
 

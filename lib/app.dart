@@ -51,14 +51,6 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell> {
   int _currentIndex = 0;
 
-  final _screens = const [
-    HomeScreen(),
-    IncomeScreen(),
-    ExpenseScreen(),
-    SavingsScreen(),
-    EmergencyScreen(),
-  ];
-
   final _titles = [
     'Inicio',
     'Ingresos',
@@ -70,14 +62,23 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _currentIndex == 0 || _currentIndex > 2
+      appBar: _currentIndex == 0
           ? null
           : AppBar(title: Text(_titles[_currentIndex])),
       drawer: _buildDrawer(context),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: SafeArea(
+        child: IndexedStack(
+          index: _currentIndex,
+          children: const [
+            HomeScreen(),
+            IncomeBody(),
+            ExpenseBody(),
+            SavingsBody(),
+            EmergencyBody(),
+          ],
+        ),
       ),
+      floatingActionButton: _fabForIndex(_currentIndex),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
@@ -92,74 +93,86 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
+  Widget? _fabForIndex(int index) {
+    switch (index) {
+      case 1: return FloatingActionButton(onPressed: () => showIncomeForm(context, ref), child: const Icon(Icons.add));
+      case 2: return FloatingActionButton(onPressed: () => showExpenseForm(context, ref), child: const Icon(Icons.add));
+      case 3: return FloatingActionButton(onPressed: () => showSavingsForm(context, ref), child: const Icon(Icons.add));
+      case 4: return FloatingActionButton(onPressed: () => showEmergencyForm(context, ref), child: const Icon(Icons.add));
+      default: return null;
+    }
+  }
+
   Widget _buildDrawer(BuildContext context) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.blue, AppColors.purple],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const Icon(Icons.favorite, color: Colors.white, size: 40),
-                const SizedBox(height: 8),
-                Text(
-                  'Cash Management',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.blue, AppColors.purple],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const SizedBox(height: 4),
-                  Consumer(builder: (_, ref, _) {
-                  final roomState = ref.watch(roomProvider);
-                  return Text(
-                    'Sala: ${roomState.room?.code ?? ''}',
-                    style: GoogleFonts.inter(fontSize: 13, color: Colors.white70),
-                  );
-                }),
-              ],
-            ),
-          ),
-          _drawerItem(Icons.repeat, 'Gastos Recurrentes', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const RecurringScreen()));
-          }),
-          _drawerItem(Icons.picture_as_pdf, 'Reportes', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportScreen()));
-          }),
-          const Divider(),
-          _drawerItem(Icons.logout, 'Desconectar', () {
-            Navigator.pop(context);
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('¿Desconectar?'),
-                content: const Text('Se eliminarán los datos locales de la sala.'),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      ref.read(roomProvider.notifier).disconnect();
-                    },
-                    child: const Text('Desconectar', style: TextStyle(color: Colors.red)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Icon(Icons.favorite, color: Colors.white, size: 40),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cash Management',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
+                  const SizedBox(height: 4),
+                  Consumer(builder: (_, ref, _) {
+                    final roomState = ref.watch(roomProvider);
+                    return Text(
+                      'Sala: ${roomState.room?.code ?? ''}',
+                      style: GoogleFonts.inter(fontSize: 13, color: Colors.white70),
+                    );
+                  }),
                 ],
               ),
-            );
-          }),
-        ],
+            ),
+            _drawerItem(Icons.repeat, 'Gastos Recurrentes', () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const RecurringScreen()));
+            }),
+            _drawerItem(Icons.picture_as_pdf, 'Reportes', () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportScreen()));
+            }),
+            const Divider(),
+            _drawerItem(Icons.logout, 'Desconectar', () {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('¿Desconectar?'),
+                  content: const Text('Se eliminarán los datos locales de la sala.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ref.read(roomProvider.notifier).disconnect();
+                      },
+                      child: const Text('Desconectar', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

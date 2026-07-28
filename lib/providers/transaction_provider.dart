@@ -40,8 +40,8 @@ class TransactionNotifier extends Notifier<TransactionState> {
 
   @override
   TransactionState build() {
-    loadTransactions();
-    return TransactionState();
+    Future.microtask(() => loadTransactions());
+    return TransactionState(isLoading: true);
   }
 
   Future<void> loadTransactions() async {

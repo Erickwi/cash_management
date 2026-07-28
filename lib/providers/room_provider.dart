@@ -36,7 +36,7 @@ class RoomState {
 class RoomNotifier extends Notifier<RoomState> {
   @override
   RoomState build() {
-    _loadStoredRoom();
+    Future.microtask(() => _loadStoredRoom());
     return RoomState();
   }
 

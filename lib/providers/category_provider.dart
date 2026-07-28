@@ -5,7 +5,7 @@ import 'api_provider.dart';
 class CategoryNotifier extends Notifier<AsyncValue<List<Category>>> {
   @override
   AsyncValue<List<Category>> build() {
-    loadCategories();
+    Future.microtask(() => loadCategories());
     return const AsyncValue.loading();
   }
 
