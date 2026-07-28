@@ -18,12 +18,12 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic> json) => Category(
-    id: json['id'],
-    roomId: json['room_id'],
-    name: json['name'],
-    type: json['type'],
-    icon: json['icon'] ?? 'category',
-    color: json['color'] ?? '#78909C',
+    id: json['id']?.toString() ?? '',
+    roomId: json['room_id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    type: json['type']?.toString() ?? '',
+    icon: json['icon']?.toString() ?? 'category',
+    color: json['color']?.toString() ?? '#78909C',
     isPreset: json['is_preset'] ?? false,
   );
 }

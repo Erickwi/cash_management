@@ -20,15 +20,15 @@ class MonthlyReport {
   });
 
   factory MonthlyReport.fromJson(Map<String, dynamic> json) => MonthlyReport(
-    month: json['month'].toString(),
-    year: json['year'].toString(),
-    members: (json['members'] as List).cast<String>(),
-    summary: Summary.fromJson(json['summary']),
-    incomes: (json['incomes'] as List).map((e) => Transaction.fromJson(e)).toList(),
-    expenses: (json['expenses'] as List).map((e) => Transaction.fromJson(e)).toList(),
-    expenseByCategory: (json['expense_by_category'] as List)
-        .map((e) => ExpenseByCategory.fromJson(e))
-        .toList(),
+    month: json['month']?.toString() ?? '',
+    year: json['year']?.toString() ?? '',
+    members: (json['members'] as List?)?.map((e) => e.toString()).toList() ?? [],
+    summary: Summary.fromJson(json['summary'] ?? {}),
+    incomes: (json['incomes'] as List?)?.map((e) => Transaction.fromJson(e)).toList() ?? [],
+    expenses: (json['expenses'] as List?)?.map((e) => Transaction.fromJson(e)).toList() ?? [],
+    expenseByCategory: (json['expense_by_category'] as List?)
+        ?.map((e) => ExpenseByCategory.fromJson(e))
+        .toList() ?? [],
   );
 }
 
@@ -48,10 +48,10 @@ class Summary {
   });
 
   factory Summary.fromJson(Map<String, dynamic> json) => Summary(
-    totalIncome: double.parse(json['total_income'].toString()),
-    totalExpenses: double.parse(json['total_expenses'].toString()),
-    totalSavings: double.parse(json['total_savings'].toString()),
-    totalEmergency: double.parse(json['total_emergency'].toString()),
-    balance: double.parse(json['balance'].toString()),
+    totalIncome: double.tryParse(json['total_income']?.toString() ?? '') ?? 0.0,
+    totalExpenses: double.tryParse(json['total_expenses']?.toString() ?? '') ?? 0.0,
+    totalSavings: double.tryParse(json['total_savings']?.toString() ?? '') ?? 0.0,
+    totalEmergency: double.tryParse(json['total_emergency']?.toString() ?? '') ?? 0.0,
+    balance: double.tryParse(json['balance']?.toString() ?? '') ?? 0.0,
   );
 }

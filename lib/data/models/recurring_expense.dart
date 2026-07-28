@@ -26,16 +26,16 @@ class RecurringExpense {
   });
 
   factory RecurringExpense.fromJson(Map<String, dynamic> json) => RecurringExpense(
-    id: json['id'],
-    roomId: json['room_id'],
-    categoryId: json['category_id'],
-    amount: double.parse(json['amount'].toString()),
-    description: json['description'] ?? '',
+    id: json['id']?.toString() ?? '',
+    roomId: json['room_id']?.toString() ?? '',
+    categoryId: json['category_id']?.toString() ?? '',
+    amount: double.tryParse(json['amount']?.toString() ?? '') ?? 0.0,
+    description: json['description']?.toString() ?? '',
     preferredDay: json['preferred_day'] ?? 1,
     isActive: json['is_active'] ?? true,
-    createdAt: DateTime.parse(json['created_at']),
-    categoryName: json['category_name'],
-    categoryIcon: json['category_icon'],
-    categoryColor: json['category_color'],
+    createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'].toString()) : DateTime.now(),
+    categoryName: json['category_name']?.toString(),
+    categoryIcon: json['category_icon']?.toString(),
+    categoryColor: json['category_color']?.toString(),
   );
 }

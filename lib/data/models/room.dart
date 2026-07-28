@@ -12,9 +12,9 @@ class Room {
   });
 
   factory Room.fromJson(Map<String, dynamic> json) => Room(
-    id: json['id'],
-    code: json['code'],
-    createdAt: DateTime.parse(json['created_at']),
+    id: json['id']?.toString() ?? '',
+    code: json['code']?.toString() ?? '',
+    createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
     devices: json['devices'] != null
         ? (json['devices'] as List).map((d) => Device.fromJson(d)).toList()
         : null,
@@ -29,9 +29,9 @@ class Device {
   Device({required this.id, required this.alias, required this.createdAt});
 
   factory Device.fromJson(Map<String, dynamic> json) => Device(
-    id: json['id'],
-    alias: json['alias'],
-    createdAt: DateTime.parse(json['created_at']),
+    id: json['id']?.toString() ?? '',
+    alias: json['alias']?.toString() ?? '',
+    createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
   );
 }
 
