@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/room_provider.dart';
+import '../../providers/api_provider.dart';
 
 class RoomScreen extends ConsumerStatefulWidget {
   const RoomScreen({super.key});
@@ -14,18 +15,59 @@ class RoomScreen extends ConsumerStatefulWidget {
 class _RoomScreenState extends ConsumerState<RoomScreen> {
   final _aliasController = TextEditingController();
   final _codeController = TextEditingController();
+  final _serverController = TextEditingController();
   bool _isJoining = false;
 
   @override
   void dispose() {
     _aliasController.dispose();
     _codeController.dispose();
+    _serverController.dispose();
     super.dispose();
+  }
+
+  void _showServerConfig() {
+    ref.read(apiServiceProvider).getBaseUrl().then((url) {
+      _serverController.text = url;
+    });
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Servidor'),
+        content: TextField(
+          controller: _serverController,
+          decoration: const InputDecoration(
+            labelText: 'URL del backend',
+            hintText: 'http://192.168.1.x:3000',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              final url = _serverController.text.trim();
+              if (url.isNotEmpty) {
+                ref.read(apiClientProvider).setBaseUrl(url);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final roomState = ref.watch(roomProvider);
+    final isConnectionError = roomState.error != null &&
+        (roomState.error!.toLowerCase().contains('connection') ||
+         roomState.error!.toLowerCase().contains('timeout') ||
+         roomState.error!.toLowerCase().contains('socketexception'));
 
     return Scaffold(
       body: SafeArea(
@@ -35,6 +77,16 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: _showServerConfig,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
                 Container(
                   width: 100,
                   height: 100,
@@ -78,9 +130,22 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
                 if (roomState.error != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      roomState.error!,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    child: Column(
+                      children: [
+                        Text(
+                          roomState.error!,
+                          style: const TextStyle(color: Colors.red, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (isConnectionError) ...[
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: _showServerConfig,
+                            icon: const Icon(Icons.wifi, size: 16),
+                            label: const Text('Configurar servidor'),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 SizedBox(
