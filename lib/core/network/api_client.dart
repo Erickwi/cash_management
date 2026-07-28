@@ -1,13 +1,6 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-String _defaultBaseUrl() {
-  if (Platform.isAndroid) {
-    return 'http://10.0.2.2:3000';
-  }
-  return 'http://localhost:3000';
-}
 
 class ApiClient {
   late final Dio _dio;
@@ -17,7 +10,7 @@ class ApiClient {
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {'Content-Type': 'application/json'},
-      baseUrl: _defaultBaseUrl(),
+      baseUrl: dotenv.get('API_URL', fallback: 'http://10.0.2.2:3000'),
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
@@ -48,7 +41,7 @@ class ApiClient {
   Future<String> getBaseUrl() async {
     if (_dio.options.baseUrl.isNotEmpty) return _dio.options.baseUrl;
     final prefs = await SharedPreferences.getInstance();
-    final url = prefs.getString('api_url') ?? _defaultBaseUrl();
+    final url = prefs.getString('api_url') ?? dotenv.get('API_URL', fallback: 'http://10.0.2.2:3000');
     _dio.options.baseUrl = url;
     return url;
   }

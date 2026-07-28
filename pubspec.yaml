@@ -25,11 +25,20 @@ dependencies:
   shared_preferences: ^2.3.4
   share_plus: ^13.3.0
   google_fonts: ^8.2.0
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "icon_app.png"
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env
