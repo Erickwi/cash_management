@@ -29,6 +29,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   TimeOfDay _selectedTime = TimeOfDay.now();
   String? _selectedCategoryId;
   String _status = 'paid';
+  bool _isSubmitting = false;
 
   String get _title {
     switch (widget.type) {
@@ -63,7 +64,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   }
 
   void _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || _isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
 
     final dateTime = DateTime(
       _selectedDate.year,
@@ -101,6 +104,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
         widget.onSuccess?.call();
       }
     } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
       widget.onError?.call(e.toString());
     }
   }
@@ -220,8 +226,14 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submit,
-                  child: const Text('Guardar'),
+                  onPressed: _isSubmitting ? null : _submit,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Guardar'),
                 ),
               ),
               const SizedBox(height: 8),

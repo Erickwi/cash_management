@@ -15,6 +15,8 @@ class RecurringScreen extends ConsumerStatefulWidget {
 }
 
 class _RecurringScreenState extends ConsumerState<RecurringScreen> {
+  bool _isGenerating = false;
+
   @override
   void initState() {
     super.initState();
@@ -32,11 +34,19 @@ class _RecurringScreenState extends ConsumerState<RecurringScreen> {
         title: const Text('Gastos Recurrentes'),
         actions: [
             TextButton.icon(
-            onPressed: () {
+            onPressed: _isGenerating ? null : () async {
+              setState(() => _isGenerating = true);
               final now = DateTime.now();
-              ref.read(recurringProvider.notifier).generate(now.month, now.year);
+              await ref.read(recurringProvider.notifier).generate(now.month, now.year);
+              if (mounted) setState(() => _isGenerating = false);
             },
-            icon: const Icon(Icons.playlist_add_check, size: 18),
+            icon: _isGenerating
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.playlist_add_check, size: 18),
             label: const Text('Generar este mes'),
           ),
         ],
@@ -96,11 +106,18 @@ class _RecurringScreenState extends ConsumerState<RecurringScreen> {
   }
 }
 
-class _RecurringCard extends StatelessWidget {
+class _RecurringCard extends StatefulWidget {
   final RecurringExpense recurring;
   final VoidCallback onDelete;
 
   const _RecurringCard({required this.recurring, required this.onDelete});
+
+  @override
+  State<_RecurringCard> createState() => _RecurringCardState();
+}
+
+class _RecurringCardState extends State<_RecurringCard> {
+  bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +133,7 @@ class _RecurringCard extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: Color(int.parse(
-                    (recurring.categoryColor ?? '#78909C').replaceAll('#', '0xFF'))),
+                    (widget.recurring.categoryColor ?? '#78909C').replaceAll('#', '0xFF'))),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.repeat, color: Colors.white, size: 20),
@@ -127,25 +144,54 @@ class _RecurringCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    recurring.description.isNotEmpty ? recurring.description : (recurring.categoryName ?? ''),
+                    widget.recurring.description.isNotEmpty ? widget.recurring.description : (widget.recurring.categoryName ?? ''),
                     style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Día ${recurring.preferredDay} · ${recurring.categoryName ?? ''}',
+                    'Día ${widget.recurring.preferredDay} · ${widget.recurring.categoryName ?? ''}',
                     style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ],
               ),
             ),
             Text(
-              currency.format(recurring.amount),
+              currency.format(widget.recurring.amount),
               style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.textSecondary),
-              onPressed: onDelete,
+              icon: _isDeleting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline, size: 20, color: AppColors.textSecondary),
+              onPressed: _isDeleting ? null : () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('¿Eliminar?'),
+                    content: Text('Se eliminará "${widget.recurring.description.isNotEmpty ? widget.recurring.description : (widget.recurring.categoryName ?? '')}"'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          setState(() => _isDeleting = true);
+                          widget.onDelete();
+                        },
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('Eliminar'),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -169,6 +215,7 @@ class _RecurringFormState extends ConsumerState<_RecurringForm> {
   final _descriptionController = TextEditingController();
   String? _selectedCategoryId;
   int _preferredDay = DateTime.now().day;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -177,18 +224,28 @@ class _RecurringFormState extends ConsumerState<_RecurringForm> {
     super.dispose();
   }
 
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+  void _submit() async {
+    if (!_formKey.currentState!.validate() || _isSubmitting) return;
 
-    ref.read(recurringProvider.notifier).addRecurring({
-      'category_id': _selectedCategoryId,
-      'amount': double.parse(_amountController.text),
-      'description': _descriptionController.text,
-      'preferred_day': _preferredDay,
-    });
+    setState(() => _isSubmitting = true);
 
-    Navigator.of(context).pop();
-    widget.onSuccess();
+    try {
+      await ref.read(recurringProvider.notifier).addRecurring({
+        'category_id': _selectedCategoryId,
+        'amount': double.parse(_amountController.text),
+        'description': _descriptionController.text,
+        'preferred_day': _preferredDay,
+      });
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSuccess();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -249,7 +306,16 @@ class _RecurringFormState extends ConsumerState<_RecurringForm> {
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(onPressed: _submit, child: const Text('Guardar')),
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submit,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Guardar'),
+                ),
               ),
               const SizedBox(height: 8),
             ],

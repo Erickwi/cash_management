@@ -4,7 +4,7 @@ import '../core/theme/app_theme.dart';
 import '../data/models/transaction.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class TransactionCard extends StatelessWidget {
+class TransactionCard extends StatefulWidget {
   final Transaction transaction;
   final VoidCallback? onToggleStatus;
   final VoidCallback? onDelete;
@@ -16,16 +16,24 @@ class TransactionCard extends StatelessWidget {
     this.onDelete,
   });
 
+  @override
+  State<TransactionCard> createState() => _TransactionCardState();
+}
+
+class _TransactionCardState extends State<TransactionCard> {
+  bool _isToggling = false;
+  bool _isDeleting = false;
+
   Color _statusColor() {
-    return transaction.status == 'paid' ? AppColors.success : AppColors.pending;
+    return widget.transaction.status == 'paid' ? AppColors.success : AppColors.pending;
   }
 
   String _statusLabel() {
-    return transaction.status == 'paid' ? 'Pagado' : 'Pendiente';
+    return widget.transaction.status == 'paid' ? 'Pagado' : 'Pendiente';
   }
 
   IconData _typeIcon() {
-    switch (transaction.type) {
+    switch (widget.transaction.type) {
       case 'income': return Icons.arrow_downward;
       case 'expense': return Icons.arrow_upward;
       case 'savings': return Icons.savings;
@@ -37,8 +45,8 @@ class TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-    final date = DateFormat('dd/MM/yy').format(transaction.date);
-    final hour = DateFormat('HH:mm').format(transaction.date);
+    final date = DateFormat('dd/MM/yy').format(widget.transaction.date);
+    final hour = DateFormat('HH:mm').format(widget.transaction.date);
 
     return Card(
       child: Padding(
@@ -50,7 +58,7 @@ class TransactionCard extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: Color(int.parse(
-                    (transaction.categoryColor ?? '#78909C').replaceAll('#', '0xFF'))),
+                    (widget.transaction.categoryColor ?? '#78909C').replaceAll('#', '0xFF'))),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -65,9 +73,9 @@ class TransactionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    transaction.description.isNotEmpty
-                        ? transaction.description
-                        : transaction.categoryName ?? transaction.type,
+                    widget.transaction.description.isNotEmpty
+                        ? widget.transaction.description
+                        : widget.transaction.categoryName ?? widget.transaction.type,
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -76,9 +84,9 @@ class TransactionCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      if (transaction.categoryName != null) ...[
+                      if (widget.transaction.categoryName != null) ...[
                         Text(
-                          transaction.categoryName!,
+                          widget.transaction.categoryName!,
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppColors.textSecondary,
@@ -99,47 +107,60 @@ class TransactionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  currency.format(transaction.amount),
+                  currency.format(widget.transaction.amount),
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: transaction.type == 'income' ? AppColors.success : AppColors.textPrimary,
+                    color: widget.transaction.type == 'income' ? AppColors.success : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 GestureDetector(
-                  onTap: onToggleStatus,
+                  onTap: (widget.onToggleStatus == null || _isToggling) ? null : () async {
+                    setState(() => _isToggling = true);
+                    widget.onToggleStatus?.call();
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: _statusColor().withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      _statusLabel(),
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: _statusColor(),
-                      ),
-                    ),
+                    child: _isToggling
+                        ? const SizedBox(
+                            height: 14,
+                            width: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            _statusLabel(),
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: _statusColor(),
+                            ),
+                          ),
                   ),
                 ),
               ],
             ),
-            if (onDelete != null) ...[
+            if (widget.onDelete != null) ...[
               const SizedBox(width: 4),
               GestureDetector(
-                onTap: () {
+                onTap: _isDeleting ? null : () {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text('¿Eliminar?'),
-                      content: Text('Se eliminará "${transaction.description.isNotEmpty ? transaction.description : (transaction.categoryName ?? transaction.type)}"'),
+                      content: Text('Se eliminará "${widget.transaction.description.isNotEmpty ? widget.transaction.description : (widget.transaction.categoryName ?? widget.transaction.type)}"'),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
                         TextButton(
-                          onPressed: () { Navigator.pop(ctx); onDelete?.call(); },
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            setState(() => _isDeleting = true);
+                            widget.onDelete?.call();
+                          },
                           style: TextButton.styleFrom(foregroundColor: Colors.red),
                           child: const Text('Eliminar'),
                         ),
@@ -147,7 +168,13 @@ class TransactionCard extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Icon(Icons.close, size: 18, color: AppColors.textSecondary),
+                child: _isDeleting
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.close, size: 18, color: AppColors.textSecondary),
               ),
             ],
           ],
