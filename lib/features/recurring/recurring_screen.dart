@@ -87,8 +87,10 @@ class _RecurringScreenState extends ConsumerState<RecurringScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _RecurringForm(
-        onSuccess: () => ref.read(recurringProvider.notifier).loadRecurring(),
+      builder: (_) => SafeArea(
+        child: _RecurringForm(
+          onSuccess: () => ref.read(recurringProvider.notifier).loadRecurring(),
+        ),
       ),
     );
   }

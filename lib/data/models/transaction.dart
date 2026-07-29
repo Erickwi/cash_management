@@ -93,6 +93,6 @@ class ExpenseByCategory {
     icon: _parseString(json['icon'], 'category'),
     color: _parseString(json['color'], '#78909C'),
     total: _parseDouble(json['total']),
-    count: json['count'] ?? 0,
+    count: int.tryParse(json['count']?.toString() ?? '') ?? 0,
   );
 }

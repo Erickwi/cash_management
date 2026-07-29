@@ -1,7 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import '../data/models/room.dart';
 import 'api_provider.dart';
+
+String _parseError(dynamic e) {
+  if (e is DioException) {
+    final data = e.response?.data;
+    if (data is Map && data['error'] != null) return data['error'].toString();
+    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+      return 'Tiempo de espera agotado. Revisa la URL del servidor.';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'No se pudo conectar al servidor. Revisa la URL o tu conexión.';
+    }
+  }
+  return e.toString();
+}
 
 class RoomState {
   final bool isConnected;
@@ -74,7 +89,7 @@ class RoomNotifier extends Notifier<RoomState> {
         error: null,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _parseError(e));
     }
   }
 
@@ -97,7 +112,7 @@ class RoomNotifier extends Notifier<RoomState> {
         error: null,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _parseError(e));
     }
   }
 

@@ -130,7 +130,23 @@ class TransactionCard extends StatelessWidget {
             if (onDelete != null) ...[
               const SizedBox(width: 4),
               GestureDetector(
-                onTap: onDelete,
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('¿Eliminar?'),
+                      content: Text('Se eliminará "${transaction.description.isNotEmpty ? transaction.description : (transaction.categoryName ?? transaction.type)}"'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+                        TextButton(
+                          onPressed: () { Navigator.pop(ctx); onDelete?.call(); },
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          child: const Text('Eliminar'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
                 child: const Icon(Icons.close, size: 18, color: AppColors.textSecondary),
               ),
             ],

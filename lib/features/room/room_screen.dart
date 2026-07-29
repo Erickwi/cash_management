@@ -154,10 +154,16 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
                     onPressed: roomState.isLoading
                         ? null
                         : () {
-                            if (_aliasController.text.trim().isEmpty) return;
+                            final alias = _aliasController.text.trim();
+                            if (alias.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Ingresa tu nombre'), backgroundColor: Colors.orange),
+                              );
+                              return;
+                            }
                             ref
                                 .read(roomProvider.notifier)
-                                .createRoom(_aliasController.text.trim());
+                                .createRoom(alias);
                           },
                     child: roomState.isLoading && !_isJoining
                         ? const SizedBox(
@@ -196,13 +202,27 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
                     onPressed: roomState.isLoading
                         ? null
                         : () {
-                            if (_aliasController.text.trim().isEmpty ||
-                                _codeController.text.trim().isEmpty) { return; }
+                            final alias = _aliasController.text.trim();
+                            final code = _codeController.text.trim();
+
+                            if (alias.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Ingresa tu nombre'), backgroundColor: Colors.orange),
+                              );
+                              return;
+                            }
+                            if (code.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Ingresa el código de sala'), backgroundColor: Colors.orange),
+                              );
+                              return;
+                            }
+
                             setState(() => _isJoining = true);
                             ref
                                 .read(roomProvider.notifier)
-                                .joinRoom(_codeController.text.trim(), _aliasController.text.trim())
-                                .then((v) { setState(() => _isJoining = false); return v; });
+                                .joinRoom(code, alias)
+                                .then((v) { if (mounted) setState(() => _isJoining = false); });
                           },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.purple),

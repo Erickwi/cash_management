@@ -51,7 +51,7 @@ class _ExpenseBodyState extends ConsumerState<ExpenseBody> with SingleTickerProv
           child: TabBarView(
             controller: _tabController,
             children: [
-              _buildList(state, ref),
+              _buildList(state),
               _buildChart(reportAsync),
             ],
           ),
@@ -60,34 +60,62 @@ class _ExpenseBodyState extends ConsumerState<ExpenseBody> with SingleTickerProv
     );
   }
 
-  Widget _buildList(TransactionState state, WidgetRef ref) {
+  Widget _buildList(TransactionState state) {
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: AppColors.pending.withValues(alpha: 0.7)),
+            const SizedBox(height: 16),
+            Text('Error al cargar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(state.error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: () => ref.read(expenseProvider.notifier).loadTransactions(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (state.transactions.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shopping_cart, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+            const SizedBox(height: 16),
+            Text('No hay gastos registrados', style: TextStyle(color: AppColors.textSecondary)),
+          ],
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () => ref.read(expenseProvider.notifier).loadTransactions(),
-      child: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.transactions.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.shopping_cart, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
-                      const SizedBox(height: 16),
-                      Text('No hay gastos registrados', style: TextStyle(color: AppColors.textSecondary)),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 80),
-                  itemCount: state.transactions.length,
-                  itemBuilder: (_, i) => TransactionCard(
-                    transaction: state.transactions[i],
-                    onToggleStatus: () {
-                      final newStatus = state.transactions[i].status == 'paid' ? 'pending' : 'paid';
-                      ref.read(expenseProvider.notifier).updateStatus(state.transactions[i].id, newStatus);
-                    },
-                    onDelete: () => ref.read(expenseProvider.notifier).deleteTransaction(state.transactions[i].id),
-                  ),
-                ),
+      child: ListView.builder(
+        padding: const EdgeInsets.only(top: 8, bottom: 80),
+        itemCount: state.transactions.length,
+        itemBuilder: (_, i) => TransactionCard(
+          transaction: state.transactions[i],
+          onToggleStatus: () {
+            final newStatus = state.transactions[i].status == 'paid' ? 'pending' : 'paid';
+            ref.read(expenseProvider.notifier).updateStatus(state.transactions[i].id, newStatus);
+          },
+          onDelete: () => ref.read(expenseProvider.notifier).deleteTransaction(state.transactions[i].id),
+        ),
+      ),
     );
   }
 
@@ -160,6 +188,11 @@ void showExpenseForm(BuildContext context, WidgetRef ref) {
         onSuccess: () {
           ref.read(expenseProvider.notifier).loadTransactions();
           ref.read(reportProvider.notifier).loadReport(DateTime.now().month, DateTime.now().year);
+        },
+        onError: (msg) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), backgroundColor: Colors.red),
+          );
         },
       ),
     ),

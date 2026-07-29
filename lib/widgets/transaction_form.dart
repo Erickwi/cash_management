@@ -8,11 +8,13 @@ import '../providers/transaction_provider.dart';
 class TransactionForm extends ConsumerStatefulWidget {
   final String type;
   final VoidCallback? onSuccess;
+  final void Function(String)? onError;
 
   const TransactionForm({
     super.key,
     required this.type,
     this.onSuccess,
+    this.onError,
   });
 
   @override
@@ -83,19 +85,23 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
       data['category_id'] = _selectedCategoryId;
     }
 
-    switch (widget.type) {
-      case 'income':
-        await ref.read(incomeProvider.notifier).addTransaction(data);
-      case 'expense':
-        await ref.read(expenseProvider.notifier).addTransaction(data);
-      case 'savings':
-        await ref.read(savingsProvider.notifier).addTransaction(data);
-      case 'emergency':
-        await ref.read(emergencyProvider.notifier).addTransaction(data);
-    }
-    if (mounted) {
-      Navigator.of(context).pop();
-      widget.onSuccess?.call();
+    try {
+      switch (widget.type) {
+        case 'income':
+          await ref.read(incomeProvider.notifier).addTransaction(data);
+        case 'expense':
+          await ref.read(expenseProvider.notifier).addTransaction(data);
+        case 'savings':
+          await ref.read(savingsProvider.notifier).addTransaction(data);
+        case 'emergency':
+          await ref.read(emergencyProvider.notifier).addTransaction(data);
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSuccess?.call();
+      }
+    } catch (e) {
+      widget.onError?.call(e.toString());
     }
   }
 
@@ -103,9 +109,10 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoryProvider);
     final categories = categoriesAsync.value ?? [];
-    final filteredCategories = widget.type == 'income'
-        ? categories.where((c) => c.type == 'income').toList()
-        : categories.where((c) => c.type == 'expense').toList();
+    final showCategories = widget.type == 'income' || widget.type == 'expense';
+    final filteredCategories = showCategories
+        ? categories.where((c) => c.type == widget.type).toList()
+        : [];
 
     return Padding(
       padding: EdgeInsets.only(
@@ -143,7 +150,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
               if (filteredCategories.isNotEmpty) ...[
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(labelText: 'Categoria'),
-                  items: filteredCategories.map((c) => DropdownMenuItem(
+                  items: filteredCategories.map<DropdownMenuItem<String>>((c) => DropdownMenuItem<String>(
                     value: c.id,
                     child: Row(
                       children: [

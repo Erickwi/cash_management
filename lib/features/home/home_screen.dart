@@ -149,6 +149,7 @@ class HomeScreen extends ConsumerWidget {
                     final newStatus = tx.status == 'paid' ? 'pending' : 'paid';
                     ref.read(allTransactionsProvider.notifier).updateStatus(tx.id, newStatus);
                   },
+                  onDelete: () => ref.read(allTransactionsProvider.notifier).deleteTransaction(tx.id),
                 )),
             ],
           ],
