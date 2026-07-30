@@ -16,13 +16,14 @@ class SocketClient {
 
     final prefs = await SharedPreferences.getInstance();
     final roomCode = prefs.getString('room_code');
-    if (roomCode != null) {
-      _socket!.emit('join-room', roomCode);
+    final deviceId = prefs.getString('device_id');
+    if (roomCode != null && deviceId != null) {
+      _socket!.emit('join-room', {'roomCode': roomCode, 'deviceId': deviceId});
     }
 
     _socket!.onConnect((_) {
-      if (roomCode != null) {
-        _socket!.emit('join-room', roomCode);
+      if (roomCode != null && deviceId != null) {
+        _socket!.emit('join-room', {'roomCode': roomCode, 'deviceId': deviceId});
       }
     });
   }

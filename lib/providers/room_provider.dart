@@ -20,6 +20,7 @@ String _parseError(dynamic e) {
 
 class RoomState {
   final bool isConnected;
+  final bool isInitializing;
   final Room? room;
   final Device? device;
   final bool isLoading;
@@ -27,6 +28,7 @@ class RoomState {
 
   RoomState({
     this.isConnected = false,
+    this.isInitializing = true,
     this.room,
     this.device,
     this.isLoading = false,
@@ -35,12 +37,14 @@ class RoomState {
 
   RoomState copyWith({
     bool? isConnected,
+    bool? isInitializing,
     Room? room,
     Device? device,
     bool? isLoading,
     String? error,
   }) => RoomState(
     isConnected: isConnected ?? this.isConnected,
+    isInitializing: isInitializing ?? this.isInitializing,
     room: room ?? this.room,
     device: device ?? this.device,
     isLoading: isLoading ?? this.isLoading,
@@ -64,9 +68,12 @@ class RoomNotifier extends Notifier<RoomState> {
     if (roomCode != null && deviceId != null) {
       state = state.copyWith(
         isConnected: true,
+        isInitializing: false,
         room: Room(id: '', code: roomCode, createdAt: DateTime.now()),
         device: Device(id: deviceId, alias: alias ?? '', createdAt: DateTime.now()),
       );
+    } else {
+      state = state.copyWith(isInitializing: false);
     }
   }
 
@@ -83,6 +90,7 @@ class RoomNotifier extends Notifier<RoomState> {
 
       state = state.copyWith(
         isConnected: true,
+        isInitializing: false,
         room: result.room,
         device: result.device,
         isLoading: false,
@@ -106,6 +114,7 @@ class RoomNotifier extends Notifier<RoomState> {
 
       state = state.copyWith(
         isConnected: true,
+        isInitializing: false,
         room: result.room,
         device: result.device,
         isLoading: false,
@@ -122,7 +131,7 @@ class RoomNotifier extends Notifier<RoomState> {
     await prefs.remove('device_id');
     await prefs.remove('alias');
 
-    state = RoomState();
+    state = RoomState(isInitializing: false);
   }
 }
 

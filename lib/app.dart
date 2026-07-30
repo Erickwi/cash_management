@@ -33,6 +33,14 @@ class AuthGate extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final roomState = ref.watch(roomProvider);
 
+    if (roomState.isInitializing) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     if (!roomState.isConnected) {
       return const RoomScreen();
     }

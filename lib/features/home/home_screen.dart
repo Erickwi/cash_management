@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/room_provider.dart';
+import '../../providers/device_status_provider.dart';
 import '../../widgets/summary_card.dart';
 import '../../widgets/transaction_card.dart';
 
@@ -15,6 +16,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final allAsync = ref.watch(allTransactionsProvider);
     final roomState = ref.watch(roomProvider);
+    final deviceStatus = ref.watch(deviceStatusProvider);
     final transactions = allAsync.transactions;
     final month = DateFormat('MMMM yyyy').format(DateTime.now());
 
@@ -85,6 +87,46 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 20),
+            if (deviceStatus.devices.isNotEmpty) ...[
+              Text(
+                'En esta sala',
+                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: deviceStatus.devices.map((device) {
+                  final isMe = device.deviceId == roomState.device?.id;
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: device.isOnline
+                              ? Colors.green
+                              : Colors.grey,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isMe ? '${device.alias} (tú)' : device.alias,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: device.isOnline
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (allAsync.isLoading)
               const Center(child: CircularProgressIndicator())
             else ...[
