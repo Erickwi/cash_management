@@ -5,9 +5,42 @@ on:
     tags: ['v*']
 
 jobs:
-  build:
+  setup:
+    name: Setup
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Create .env file
+        run: echo "API_URL=${{ secrets.API_URL }}" > .env
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-pub-cache-${{ hashFiles('**/pubspec.lock') }}
+
+  build:
+    name: Build APK
+    needs: setup
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,6 +65,24 @@ jobs:
       - name: Build APK (Release)
         run: flutter build apk --release
 
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: apk-release
+
       - name: Get version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -45,7 +96,7 @@ jobs:
             
             ### Cambios
             Ver commits: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: app-release.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
