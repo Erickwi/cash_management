@@ -23,6 +23,9 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Create .env file
+        run: echo "API_URL=" > .env
+
       - name: Get dependencies
         run: flutter pub get
 
