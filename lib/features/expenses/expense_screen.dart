@@ -108,12 +108,17 @@ class _ExpenseBodyState extends ConsumerState<ExpenseBody> with SingleTickerProv
         padding: const EdgeInsets.only(top: 8, bottom: 80),
         itemCount: state.transactions.length,
         itemBuilder: (_, i) => TransactionCard(
+          key: ValueKey(state.transactions[i].id),
           transaction: state.transactions[i],
           onToggleStatus: () {
             final newStatus = state.transactions[i].status == 'paid' ? 'pending' : 'paid';
             ref.read(expenseProvider.notifier).updateStatus(state.transactions[i].id, newStatus);
+            ref.read(allTransactionsProvider.notifier).updateStatusLocally(state.transactions[i].id, newStatus);
           },
-          onDelete: () => ref.read(expenseProvider.notifier).deleteTransaction(state.transactions[i].id),
+          onDelete: () {
+            ref.read(expenseProvider.notifier).deleteTransaction(state.transactions[i].id);
+            ref.read(allTransactionsProvider.notifier).deleteTransactionLocally(state.transactions[i].id);
+          },
         ),
       ),
     );
@@ -185,8 +190,9 @@ void showExpenseForm(BuildContext context, WidgetRef ref) {
     builder: (_) => SafeArea(
       child: TransactionForm(
         type: 'expense',
-        onSuccess: () {
-          ref.read(expenseProvider.notifier).loadTransactions();
+        onSuccess: (tx) {
+          ref.read(expenseProvider.notifier).addTransactionLocally(tx);
+          ref.read(allTransactionsProvider.notifier).addTransactionLocally(tx);
           ref.read(reportProvider.notifier).loadReport(DateTime.now().month, DateTime.now().year);
         },
         onError: (msg) {

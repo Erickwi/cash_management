@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../data/models/transaction.dart';
 import '../providers/category_provider.dart';
 import '../providers/transaction_provider.dart';
 
 class TransactionForm extends ConsumerStatefulWidget {
   final String type;
-  final VoidCallback? onSuccess;
+  final void Function(Transaction tx)? onSuccess;
   final void Function(String)? onError;
 
   const TransactionForm({
@@ -89,19 +90,20 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     }
 
     try {
+      Transaction? tx;
       switch (widget.type) {
         case 'income':
-          await ref.read(incomeProvider.notifier).addTransaction(data);
+          tx = await ref.read(incomeProvider.notifier).addTransaction(data);
         case 'expense':
-          await ref.read(expenseProvider.notifier).addTransaction(data);
+          tx = await ref.read(expenseProvider.notifier).addTransaction(data);
         case 'savings':
-          await ref.read(savingsProvider.notifier).addTransaction(data);
+          tx = await ref.read(savingsProvider.notifier).addTransaction(data);
         case 'emergency':
-          await ref.read(emergencyProvider.notifier).addTransaction(data);
+          tx = await ref.read(emergencyProvider.notifier).addTransaction(data);
       }
       if (mounted) {
         Navigator.of(context).pop();
-        widget.onSuccess?.call();
+        if (tx != null) widget.onSuccess?.call(tx);
       }
     } catch (e) {
       if (mounted) {

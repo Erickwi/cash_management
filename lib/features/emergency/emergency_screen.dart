@@ -65,12 +65,17 @@ class EmergencyBody extends ConsumerWidget {
       padding: const EdgeInsets.only(top: 8, bottom: 80),
       itemCount: state.transactions.length,
       itemBuilder: (_, i) => TransactionCard(
+        key: ValueKey(state.transactions[i].id),
         transaction: state.transactions[i],
         onToggleStatus: () {
           final newStatus = state.transactions[i].status == 'paid' ? 'pending' : 'paid';
           ref.read(emergencyProvider.notifier).updateStatus(state.transactions[i].id, newStatus);
+          ref.read(allTransactionsProvider.notifier).updateStatusLocally(state.transactions[i].id, newStatus);
         },
-        onDelete: () => ref.read(emergencyProvider.notifier).deleteTransaction(state.transactions[i].id),
+        onDelete: () {
+          ref.read(emergencyProvider.notifier).deleteTransaction(state.transactions[i].id);
+          ref.read(allTransactionsProvider.notifier).deleteTransactionLocally(state.transactions[i].id);
+        },
       ),
     );
   }
@@ -86,7 +91,10 @@ void showEmergencyForm(BuildContext context, WidgetRef ref) {
     builder: (_) => SafeArea(
       child: TransactionForm(
         type: 'emergency',
-        onSuccess: () => ref.read(emergencyProvider.notifier).loadTransactions(),
+        onSuccess: (tx) {
+          ref.read(emergencyProvider.notifier).addTransactionLocally(tx);
+          ref.read(allTransactionsProvider.notifier).addTransactionLocally(tx);
+        },
         onError: (msg) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(msg), backgroundColor: Colors.red),
