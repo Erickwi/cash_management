@@ -186,17 +186,40 @@ class HomeScreen extends ConsumerWidget {
                 )
               else
                 ...recentTransactions.map((tx) => TransactionCard(
+                  key: ValueKey(tx.id),
                   transaction: tx,
                   onToggleStatus: () {
                     final newStatus = tx.status == 'paid' ? 'pending' : 'paid';
                     ref.read(allTransactionsProvider.notifier).updateStatus(tx.id, newStatus);
+                    _syncStatusLocally(ref, tx.type, tx.id, newStatus);
                   },
-                  onDelete: () => ref.read(allTransactionsProvider.notifier).deleteTransaction(tx.id),
+                  onDelete: () {
+                    ref.read(allTransactionsProvider.notifier).deleteTransaction(tx.id);
+                    _syncDeleteLocally(ref, tx.type, tx.id);
+                  },
                 )),
             ],
           ],
         ),
       ),
     );
+  }
+
+  void _syncStatusLocally(WidgetRef ref, String type, String id, String status) {
+    switch (type) {
+      case 'income': ref.read(incomeProvider.notifier).updateStatusLocally(id, status);
+      case 'expense': ref.read(expenseProvider.notifier).updateStatusLocally(id, status);
+      case 'savings': ref.read(savingsProvider.notifier).updateStatusLocally(id, status);
+      case 'emergency': ref.read(emergencyProvider.notifier).updateStatusLocally(id, status);
+    }
+  }
+
+  void _syncDeleteLocally(WidgetRef ref, String type, String id) {
+    switch (type) {
+      case 'income': ref.read(incomeProvider.notifier).deleteTransactionLocally(id);
+      case 'expense': ref.read(expenseProvider.notifier).deleteTransactionLocally(id);
+      case 'savings': ref.read(savingsProvider.notifier).deleteTransactionLocally(id);
+      case 'emergency': ref.read(emergencyProvider.notifier).deleteTransactionLocally(id);
+    }
   }
 }

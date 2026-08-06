@@ -59,13 +59,14 @@ class TransactionNotifier extends Notifier<TransactionState> {
     }
   }
 
-  Future<void> addTransaction(Map<String, dynamic> data) async {
+  Future<Transaction?> addTransaction(Map<String, dynamic> data) async {
     try {
       final api = ref.read(apiServiceProvider);
-      await api.createTransaction(data);
-      await loadTransactions();
+      final tx = await api.createTransaction(data);
+      return tx;
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      return null;
     }
   }
 
@@ -73,7 +74,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
     try {
       final api = ref.read(apiServiceProvider);
       await api.updateTransactionStatus(id, status);
-      await loadTransactions();
+      updateStatusLocally(id, status);
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -83,9 +84,31 @@ class TransactionNotifier extends Notifier<TransactionState> {
     try {
       final api = ref.read(apiServiceProvider);
       await api.deleteTransaction(id);
-      await loadTransactions();
+      deleteTransactionLocally(id);
     } catch (e) {
       state = state.copyWith(error: e.toString());
+    }
+  }
+
+  void addTransactionLocally(Transaction tx) {
+    if (tx.type != typeFilter && typeFilter != null) return;
+    final current = List<Transaction>.from(state.transactions);
+    current.insert(0, tx);
+    state = state.copyWith(transactions: current);
+  }
+
+  void deleteTransactionLocally(String id) {
+    final current = List<Transaction>.from(state.transactions);
+    current.removeWhere((tx) => tx.id == id);
+    state = state.copyWith(transactions: current);
+  }
+
+  void updateStatusLocally(String id, String status) {
+    final current = List<Transaction>.from(state.transactions);
+    final index = current.indexWhere((tx) => tx.id == id);
+    if (index >= 0) {
+      current[index] = current[index].copyWith(status: status);
+      state = state.copyWith(transactions: current);
     }
   }
 

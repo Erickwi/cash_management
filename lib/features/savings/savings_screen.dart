@@ -64,8 +64,12 @@ class SavingsBody extends ConsumerWidget {
       padding: const EdgeInsets.only(top: 8, bottom: 80),
       itemCount: state.transactions.length,
       itemBuilder: (_, i) => TransactionCard(
+        key: ValueKey(state.transactions[i].id),
         transaction: state.transactions[i],
-        onDelete: () => ref.read(savingsProvider.notifier).deleteTransaction(state.transactions[i].id),
+        onDelete: () {
+          ref.read(savingsProvider.notifier).deleteTransaction(state.transactions[i].id);
+          ref.read(allTransactionsProvider.notifier).deleteTransactionLocally(state.transactions[i].id);
+        },
       ),
     );
   }
@@ -81,7 +85,10 @@ void showSavingsForm(BuildContext context, WidgetRef ref) {
     builder: (_) => SafeArea(
       child: TransactionForm(
         type: 'savings',
-        onSuccess: () => ref.read(savingsProvider.notifier).loadTransactions(),
+        onSuccess: (tx) {
+          ref.read(savingsProvider.notifier).addTransactionLocally(tx);
+          ref.read(allTransactionsProvider.notifier).addTransactionLocally(tx);
+        },
         onError: (msg) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(msg), backgroundColor: Colors.red),
